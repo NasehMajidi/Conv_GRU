@@ -14,9 +14,6 @@ import time
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error 
 
-
-
-
 class Train:
     def __init__(self, model, device, train_loader, val_loader, optimizer, cost, 
                  l1_lambda, epoch_res, total_epoch, verbose):
@@ -31,20 +28,17 @@ class Train:
         self.total_epoch = total_epoch
         self.verbose = verbose
         
-    def loss_acc_cal(self, output , target):
-      y_mu = output[: , 0].cpu().detach().numpy()
-      y_sigma = output[: , 1].cpu().detach().numpy()
-      target_mu = target[:,0].cpu().detach().numpy()
-      target_sigma = target[:,1].cpu().detach().numpy()
-      mse_slope = round(mean_squared_error(y_mu ,target_mu) , 5)
-      mse_sigma = round(mean_squared_error(y_sigma ,target_sigma) , 5)
-      error_Slope = len(y_mu) *mse_slope
-      a = np.sign(y_mu) 
-      b = np.sign(target_mu)
-      c = a*b
-      true_count = np.count_nonzero(c == 1)
-      false_count =  np.count_nonzero(c == -1)
-      return true_count ,false_count ,  error_Slope 
+    def loss_acc_cal(self, output , target, ind = 0):
+      out = output[: ,ind].cpu().detach().numpy()
+      tar = target[: ,ind].cpu().detach().numpy()
+      mse = round(mean_squared_error(out ,tar) , 5)
+      error = len(out) *mse
+      sign_out = np.sign(out) 
+      sign_tar = np.sign(tar)
+      sign = sign_out*sign_tar
+      true_count = np.count_nonzero(sign == 1)
+      false_count =  np.count_nonzero(sign == -1)
+      return true_count ,false_count ,  error
 
     
     def train_step(self):
@@ -141,15 +135,56 @@ class Train:
                       {'loss': val_loss_history,
                       'mse':val_mse_history,
                       'acc':val_acc_history}}
-        if not (epoch) % self.epoch_res and self.verbose:
+        if (not (epoch) % self.epoch_res or epoch == self.total_epoch -1) and self.verbose  :
 
-          print(f'{epoch} / {self.total_epoch}\n--------')
-          print('     Train loss : {:.4f}         Validation loss : {:.4f}         Time: {:.2f} Mins'.format(float(train_loss) ,float(val_loss),(t1-t0)/60  ))    
-          print('     Train MSE : {:.4f}    Validation MSE: {:.4f}'.format(train_mse , val_mse))
-          print('     Train ACC : {:.1f}    Validation ACC: {:.1f}'.format(train_acc , val_acc))
+          print(f'{epoch+1} / {self.total_epoch},  Duration: {(t1-t0)/60:.2f} Mins \n--------')
+          print(f'     Train ----> Loss: {float(train_loss):.4f}, Acc: {train_acc:.2f}, MSE: {train_mse:.4f} ')
+          print(f'     Val ------> Loss: {float(val_loss):.4f}, Acc: {val_acc:.2f}, MSE: {val_mse:.4f} ')
+        
 
 
       return self.model , self.history
+
+class Test:
+    def __init__(self, model, device, loader, coef):
+        self.model = model
+        self.device = device
+        self.loader = loader
+        self.coef = coef
+        
+    def test_model(self):
+      self.model.eval()
+      mean = []
+      sigma = []
+      with torch.no_grad():
+        for data, target in self.loader:
+          data, _ = data.float().to(self.device), target.float().to(self.device)
+          output = self.model(data)
+          output = output.cpu().detach().numpy()
+          mean.append(output[:,0])
+          sigma.append(output[:,1])
+      return mean , sigma 
+    
+    def tor_num(self, inp):
+      y = []
+      for i in range(len(inp)):
+        for j in range(inp[i].shape[0]):
+            y.append(inp[i][j].item())
+      return y
+
+    def loss_acc(self):
+      out_mean , out_sigma = self.test_model()
+      y_mean = self.tor_num(out_mean)
+      y_sigma = self.tor_num(out_sigma)
+      mse_mean = round(mean_squared_error(y_mean ,self.coef['mean']) , 5)
+      mse_sigma = round(mean_squared_error(y_sigma ,self.coef['sigma']) , 5)
+
+      sign_mean = np.sign(y_mean) 
+      sign_coef = np.sign(self.coef['mean'])
+      sign = sign_mean*sign_coef
+      acc = np.count_nonzero(sign == 1) / ( np.count_nonzero(sign == -1) + np.count_nonzero(sign == 1) )
+      acc = round(100 * acc , 1)
+      return mse_mean, mse_sigma, acc
 
 class ConvGru(nn.Module):
     def __init__(self, kernels  , channels   , gru_dim , lin_dim, dropout , padding = 1 , num_l = 2 , in_channel = 1):
