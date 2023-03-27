@@ -5,12 +5,10 @@ Created on Sat Mar 25 15:42:17 2023
 @author: Majidi
 """
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 import sklearn
 from sklearn.preprocessing import RobustScaler , MinMaxScaler
 from sklearn.linear_model import LinearRegression
-import pickle
 
 def scale(data, in_col , scaler):
   out_scaler = scaler.fit(data['train'][in_col].values.reshape(-1,1))
@@ -40,7 +38,7 @@ def coef_maker(x , y , model ):
     coefs = np.zeros((y.shape[0] , 2))
     for i in range(y.shape[0]):
         model.fit(x,y[i])
-        a , b = model.coef_[0] , model.intercept_
+        a , _ = model.coef_[0] , model.intercept_
         new_y = a*x + y[i][0]
         sigma = mean_absolute_percentage_error(new_y.reshape(-1) , y[i].reshape(-1))
         coefs[i] = a , sigma
