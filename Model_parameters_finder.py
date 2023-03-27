@@ -7,8 +7,6 @@ Created on Sun Mar 26 01:32:52 2023
 
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data import  DataLoader
@@ -32,7 +30,6 @@ data_len = 320
 data_loader2 = loader(data_loader, batch_size , shuffle_mode=True, data_len = data_len)
 num_channels_v = [[64 , 64 ]  , [64 , 64 , 32] , [64 , 64 , 32 , 32] , [32 , 32] , [32 , 32 , 16] , [32 , 32 , 16 , 16] , [64 , 64 , 32 , 32 , 32] , [16 , 32 , 32 , 32 , 64]]
 lrs = np.logspace(-4 ,-1, 5)
-min_loss = []
 drop = 0.0
 j = 0
 alpha = 0.5
@@ -44,8 +41,6 @@ for lr in tqdm(lrs):
     device =my_device
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters() ,lr = lr )
-    train_loss = []
-    val_loss = []
     cost_function = PenaltyLoss(k = 10 , alpha_penalty=0.6 , alpha_cl=0.6 )
     initial_t = time.time()
     training_model = Train(model, device,  data_loader2['train'], data_loader2['train'] , optimizer, cost_function, 0 ,
@@ -53,7 +48,7 @@ for lr in tqdm(lrs):
     my_model , history = training_model.train()
     end_t = time.time()
     print(f"{j+1:3d}/{len(lrs) * len(num_channels_v) :3d}:")
-    print(f"     Model:{i} -->  Duration : lr: {lr:.4f}  |  {np.round(((end_t - initial_t ) / 60) , 2):.2f} Mins")
+    print(f"     Model:{i} -->  lr: {lr:.4f}, Duration: {(end_t - initial_t ) / 60:.2f} Mins")
     print(f"     Train ---->  Loss: {min(history['train']['loss']):.4f},  Acc:{max(history['train']['acc']):2f},  MSE: {min(history['train']['mse']):.4f}") 
     print(f"     Val   ---->  Loss: {min(history['val']['loss']):.4f},  Acc:{max(history['val']['acc']):2f},  MSE: {min(history['val']['mse']):.4f}") 
           
@@ -66,24 +61,12 @@ batch_size = 32
 epochs = 1 + 1
 data_loader2 = loader(data_loader, batch_size , shuffle_mode=True, data_len = data_len)
 num_channels_v = [[64 , 64 ]  , [64 , 64 , 32] , [64 , 64 , 32 , 32] , [32 , 32] , [32 , 32 , 16] , [32 , 32 , 16 , 16] , [64 , 64 , 32 , 32 , 32] , [16 , 32 , 32 , 32 , 64]]
-train_min_loss = []
-val_min_loss = []
 l1_regs = np.logspace(-5 , -3 , 100)
 regs = np.logspace(-5 , -3 , 100)
 lrs = np.logspace(-4 , -2 , 100)
 drops = np.arange(0.0 , 0.3 , 0.1)
 model_ind = 7
-l1_reg_v = []
-reg_v = []
-lr_v = []
-drop_v = []
-mse_train_v = []
-mse_val_v = []
 max_range = 60
-acc_t_v = []
-acc_v_v = []
-f1_t_v = []
-f1_v_v = []
 num_channels= num_channels_v[model_ind]
 kernel_size = len(num_channels)*[3]
 for i in tqdm(range(max_range)):
@@ -97,8 +80,6 @@ for i in tqdm(range(max_range)):
   model = ConvGru(kernels = kernel_size, channels = num_channels , gru_dim = [64] , lin_dim = [128,1], dropout = 0)
   model.to(device)
   optimizer = torch.optim.Adam(model.parameters() ,lr = lr , weight_decay = reg )
-  train_loss = []
-  val_loss = []
   initial_t = time.time()
 
   training_model = Train(model, device,  data_loader2['train'], data_loader2['val'] , optimizer, cost_function, l1_reg ,
