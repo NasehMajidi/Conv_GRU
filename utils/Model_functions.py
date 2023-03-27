@@ -7,12 +7,10 @@ Created on Sun Mar 26 01:27:12 2023
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import numpy as np
 from torch.utils.data import  DataLoader
 import time
 from sklearn.metrics import mean_squared_error
-from sklearn.metrics import mean_absolute_error 
 
 class Train:
     def __init__(self, model, device, train_loader, val_loader, optimizer, cost, 
@@ -28,7 +26,8 @@ class Train:
         self.total_epoch = total_epoch
         self.verbose = verbose
         
-    def loss_acc_cal(self, output , target, ind = 0):
+    @staticmethod
+    def loss_acc_cal(output , target, ind = 0):
       out = output[: ,ind].cpu().detach().numpy()
       tar = target[: ,ind].cpu().detach().numpy()
       mse = round(mean_squared_error(out ,tar) , 5)
@@ -44,7 +43,6 @@ class Train:
     def train_step(self):
       self.model.train()
       losses = []
-      out_ = []
       cum_true = 0
       cum_false = 0
       cum_mse = 0
@@ -100,7 +98,6 @@ class Train:
       return epoch_v_loss ,  acc , cum_mse
     
     def train(self):
-      history = dict()
       train_loss_history = []
       val_loss_history = []
       train_mse_history = []
@@ -165,7 +162,8 @@ class Test:
           sigma.append(output[:,1])
       return mean , sigma 
     
-    def tor_num(self, inp):
+    @staticmethod
+    def tor_num(inp):
       y = []
       for i in range(len(inp)):
         for j in range(inp[i].shape[0]):
@@ -249,8 +247,6 @@ class ConvGru(nn.Module):
       sigma = torch.sigmoid(self.denses[-1](x))
       return torch.cat((sl , sigma) , 1)
 
-
-      return out
 
 class PenaltyLoss ():
   def __init__(self ,k = 10,  alpha_penalty = 0.75 , alpha_cl = 0.5 , reduction = "mean"):
