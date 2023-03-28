@@ -4,7 +4,9 @@ Created on Sun Mar 26 01:27:12 2023
 
 @author: Majidi
 """
-
+###############################################################################
+################################### Imports ###################################
+###############################################################################
 import torch
 import torch.nn as nn
 import numpy as np
@@ -12,6 +14,10 @@ from torch.utils.data import  DataLoader
 import time
 from sklearn.metrics import mean_squared_error
 
+
+###############################################################################
+################################### Classes ###################################
+###############################################################################
 class Train:
     def __init__(self, model, device, train_loader, val_loader, optimizer, cost, 
                  l1_lambda, epoch_res, total_epoch, verbose):
@@ -26,8 +32,36 @@ class Train:
         self.total_epoch = total_epoch
         self.verbose = verbose
         
+        """
+        Goal: Implement a class for training a torch model
+        
+        Input:
+                - model: the torch model
+                - device: hardware (cpu or gpu)
+                - train_loader: the training data prepared for the torch model
+                - val_loader: the validation data prepared for the torch model
+                - optimizer: the optimization algorithm (e.g., adam)
+                - cost: the cost function
+                - l1_lambda: the factor of l1 regularization
+                - epoch_res: determine the number of iterations after which the summary of training phase is printed
+                - total_epoch: the total number of training epochs
+                - verbose: determine if the summary of training phase is printed or not
+        """
     @staticmethod
     def loss_acc_cal(output , target, ind = 0):
+      """  
+      Goal: calculate number of either true or false prediction (based on sign of values) as well as MSE between the groundtruth and predicted values
+      
+      Input:
+            - output: predicted values
+            - target: groudtruth values
+            - ind: index of the data (0: mean, 1: sigma)
+      
+      Output:
+            - true_count: the number of true prediction (based on the sign of values)
+            - false_count: the number of false prediction (based on the sign of values)
+            - error: MSE between the groundtruth and predicted values
+      """
       out = output[: ,ind].cpu().detach().numpy()
       tar = target[: ,ind].cpu().detach().numpy()
       mse = round(mean_squared_error(out ,tar) , 5)
@@ -41,6 +75,16 @@ class Train:
 
     
     def train_step(self):
+      """
+      Goal: training for one epoch
+      
+      Input: /
+      
+      Output:
+            - epoch_loss: the loss of the epoch
+            - acc: the accuary of the epoch
+            - cum_mse: the MSE of the epoch
+      """
       self.model.train()
       losses = []
       cum_true = 0
@@ -70,6 +114,16 @@ class Train:
       return epoch_loss ,  acc , cum_mse
     
     def val_step(self):
+      """
+      Goal: validation for one epoch
+      
+      Input: /
+      
+      Output:
+            - epoch_v_loss: the loss of the epoch
+            - acc: the accuary of the epoch
+            - cum_mse: the MSE of the epoch
+      """
       self.model.eval()
       v_losses = []
       cum_true = 0
@@ -98,6 +152,15 @@ class Train:
       return epoch_v_loss ,  acc , cum_mse
     
     def train(self):
+      """
+      Goal: train all the epoches
+      
+      Input: /
+      
+      Output:
+            - model: the trained model
+            - history: the loss, mse, and accuracy of both training and validation phase
+      """
       train_loss_history = []
       val_loss_history = []
       train_mse_history = []
@@ -149,7 +212,25 @@ class Test:
         self.loader = loader
         self.coef = coef
         
+    """
+    Goal: implementing a class for testing a torch model
+    
+    Input:
+            - model: the torch model
+            - device: hardware (cpu or gpu)
+            - loader: the testing data prepared for the torch model
+            - coef: the groundtruth data
+    """
     def test_model(self):
+      """
+      Goal: test the model
+      
+      Input: /
+      
+      Output:
+            - mean: the slope of the future data (the first predicted value)
+            - sigma: the error of future data (the second predicted value)
+      """
       self.model.eval()
       mean = []
       sigma = []
@@ -163,7 +244,16 @@ class Test:
       return mean , sigma 
     
     @staticmethod
-    def tor_num(inp):
+    def tor_list(inp):
+      """
+      Gaol: convert a torch tensor to list
+      
+      Input:
+            - inp: the torch tensor
+      
+      Output:
+            - y: the converted tensor to list
+      """
       y = []
       for i in range(len(inp)):
         for j in range(inp[i].shape[0]):
@@ -171,9 +261,19 @@ class Test:
       return y
 
     def loss_acc(self):
+      """
+      Goal: calculate loss and accuracy
+      
+      Input: /
+      
+      Output:
+            - mse_mean: MSE of mean (slope) values
+            - mse_sigma: MSE of sigma values
+            - acc: accuray of mean values 
+      """
       out_mean , out_sigma = self.test_model()
-      y_mean = self.tor_num(out_mean)
-      y_sigma = self.tor_num(out_sigma)
+      y_mean = self.tor_list(out_mean)
+      y_sigma = self.tor_list(out_sigma)
       mse_mean = round(mean_squared_error(y_mean ,self.coef['mean']) , 5)
       mse_sigma = round(mean_squared_error(y_sigma ,self.coef['sigma']) , 5)
 
@@ -185,6 +285,19 @@ class Test:
       return mse_mean, mse_sigma, acc
 
 class ConvGru(nn.Module):
+    """
+    Goal: implement conv+gru model
+    
+    Input:
+            - kernels: kernel of cnn model
+            - channel: channels of cnn model
+            - gru_dim: dimensions of gru neurons
+            - dropout: dropout value
+            - lin_dim: dimensions of linear model's neurons
+            - padding: padding in cnn model
+            - num_l: numberof gru layers
+            - in_channel: the number of channel in the first cnn layer
+    """
     def __init__(self, kernels  , channels   , gru_dim , lin_dim, dropout , padding = 1 , num_l = 2 , in_channel = 1):
       super(ConvGru, self).__init__()
 
@@ -221,6 +334,13 @@ class ConvGru(nn.Module):
       self.init_weights()
 
     def init_weights(self):
+      """
+      Goal: initialize the weights of the model
+      
+      Input: /
+      
+      Output: /
+      """
       for i in range(len(self.convs)):
         torch.nn.init.xavier_uniform_(self.convs[i].weight, gain=nn.init.calculate_gain('relu'))
 
@@ -231,6 +351,14 @@ class ConvGru(nn.Module):
 
 
     def forward(self, x):
+      """
+      Goal: forward propagation
+      
+      Input:
+            - x: the input time series
+      
+      Output: mean (1st column) and sigma (2nd column)
+      """
       x = x.transpose(1, 2)
       for i in range(len(self.conv_nets)):
         conv = self.convs[i]
@@ -243,9 +371,9 @@ class ConvGru(nn.Module):
       for i in range(len(self.denses) - 2):
         x = self.drop(self.denses[i](x))
         x = self.relu(x)
-      sl = torch.tanh(self.denses[-2](x))
+      mean = torch.tanh(self.denses[-2](x))
       sigma = torch.sigmoid(self.denses[-1](x))
-      return torch.cat((sl , sigma) , 1)
+      return torch.cat((mean , sigma) , 1)
 
 
 class PenaltyLoss ():
@@ -254,7 +382,27 @@ class PenaltyLoss ():
     self.k = k
     self.mse = nn.MSELoss(reduction = reduction)
     self.cl = CustomLoss("mse" , mode = "both" , alpha_cl=alpha_cl)
+    
+    """
+    Goal: calculate the loss (combination of regression and classification loss)
+    
+    Input:
+            - k: the input of tanh function
+            - alpha_penalty: the factor of penalty losss
+            - alpha_cl: the factor of custom loss (combination two predicted values)
+            - reduction: determine the method for MSE loss
+    """
   def __call__ (self , output , target):
+    """
+    Gaol: calculate the loss
+    
+    Input:
+            - output: predicted values
+            - target: groudtruth values
+    
+    Output:
+            - loss: the final value of loss
+    """
     a = torch.tanh(self.k*output[: , 0])
     b = torch.tanh(self.k*target[: , 0])
     loss_penalty = self.mse(a,b) 
@@ -271,7 +419,28 @@ class CustomLoss():
     if loss_f == "huber":
       self.cost = nn.SmoothL1Loss(beta = beta)
     self.mode = mode
+   
+  """
+  Goal: calculate the loss of combination of two predicted values
+  
+  Input:
+        - loss_f: determine the loss function (MSE or Huber)
+        - beta: hyperparameter of Huber loss
+        - alpha_cl: the factor of the loss of 1st predicted value ( 1-alpha_cl is the factor of the loss of 2nd predicted value)
+        - reduction: determine the method for MSE loss
+        - mode: determine if the loss of both predicted values must be calculated or not (both: both predicted values, else: 1st predicted value)
+  """
   def __call__(self, output ,  target ):
+    """
+    Gaol: calculate the loss
+    
+    Input:
+            - output: predicted values
+            - target: groudtruth values
+    
+    Output:
+            - loss: the final value of loss
+    """
     if self.mode == "both":
       loss = self.alpha_cl * self.cost(output[: , 0] , target[: , 0]) + (1-self.alpha_cl)*self.cost(output[: , 1] , target[: ,1])
     else:
@@ -279,6 +448,18 @@ class CustomLoss():
     return loss
 
 def loader(data, batch_size , shuffle_mode = False, data_len = -1):
+  """
+  Gaol: prepare the data set for the torch model
+  
+  Input:
+        - data: the input dataset
+        - batch_size: batch size
+        - shuffle_mode: determine if the data must be shuffled or not
+        - data_len: the length of data
+  
+  Output:
+        data_loader: a dictionary containing "train", "val", and "test" data
+  """
   data_loader = dict()
   if data_len == -1:
     for key in data.keys():
