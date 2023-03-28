@@ -80,9 +80,11 @@ print(f"Mean Scaler 10: {mean_scaler:.2f}  ,Sigma Scaler 10: {sigma_scaler:.2f}"
 print('---------------------------------------------')
 
 coef = coef_scaler(coef, mean_scaler, sigma_scaler)
+# save the preprocessed coef
 with open('Dataset/preprocessed_coef.pickle', 'wb') as handle:
     pickle.dump(coef, handle)
-    
+
+# create data loader
 data_loader = dict()
 for key in coef.keys():
     data_list = []
@@ -98,6 +100,6 @@ for key in data_loader.keys():
     print(f"# {key}: {len(data_loader[key])}    ")
 print('-------------------------------')
 
-# saved data loder
+# save data loder
 with open('Dataset/preprocessed_dataloader.pickle', 'wb') as handle:
     pickle.dump(data_loader, handle)
