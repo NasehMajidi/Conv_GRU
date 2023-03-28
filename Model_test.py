@@ -4,7 +4,9 @@ Created on Sun Mar 26 03:18:34 2023
 
 @author: Majidi
 """
-
+###############################################################################
+################################### Imports ###################################
+###############################################################################
 
 import torch
 import torch.nn as nn
@@ -18,9 +20,15 @@ from sklearn.metrics import mean_absolute_error
 import pickle
 from utils.Model_functions import *
 
+###############################################################################
+#################################### Main #####################################
+###############################################################################
+
+# load preprocessed data loader
 with open("Dataset/preprocessed_dataloader.pickle", "rb") as input_file:
     data_loader = pickle.load(input_file)
 
+# load preprocessed coef
 with open("Dataset/preprocessed_coef.pickle", "rb") as input_file:
     coef = pickle.load(input_file)
 
@@ -28,7 +36,7 @@ with open("Dataset/preprocessed_coef.pickle", "rb") as input_file:
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print(f'My device is "{device}"')
 
-############Tuning##########
+# Train and Test the final model
 batch_size = 32 
 epochs = 15 + 1
 data_loader2 = loader(data_loader, batch_size , shuffle_mode=True)
