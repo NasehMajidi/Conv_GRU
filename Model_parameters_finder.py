@@ -4,7 +4,9 @@ Created on Sun Mar 26 01:32:52 2023
 
 @author: Majidi
 """
-
+###############################################################################
+################################### Imports ###################################
+###############################################################################
 
 import torch
 import numpy as np
@@ -17,13 +19,18 @@ import pickle
 from utils.Model_functions import *
 from tqdm.notebook import tqdm
 
+###############################################################################
+#################################### Main #####################################
+###############################################################################
 
+# load preprocessed data loader
 with open("Dataset/preprocessed_dataloader.pickle", "rb") as input_file:
     data_loader = pickle.load(input_file)
     
 my_device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print(f'My device is "{my_device}"')
 
+# find the initial interval of learning rate's values 
 batch_size = 32 
 epochs = 5 + 1
 data_len = 320
@@ -56,11 +63,11 @@ for lr in tqdm(lrs):
     j = j+1
     
 
-############Tuning##########
+# find the hyperparameters of the model
+
 batch_size = 32 
 epochs = 1 + 1
 data_loader2 = loader(data_loader, batch_size , shuffle_mode=True, data_len = data_len)
-num_channels_v = [[64 , 64 ]  , [64 , 64 , 32] , [64 , 64 , 32 , 32] , [32 , 32] , [32 , 32 , 16] , [32 , 32 , 16 , 16] , [64 , 64 , 32 , 32 , 32] , [16 , 32 , 32 , 32 , 64]]
 l1_regs = np.logspace(-5 , -3 , 100)
 regs = np.logspace(-5 , -3 , 100)
 lrs = np.logspace(-4 , -2 , 100)
